@@ -4,6 +4,7 @@ import org.testng.annotations.Test;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.simple.parser.ParseException;
+import org.testng.Assert;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeTest;
 
@@ -40,25 +41,23 @@ public class Start_Booking_Flow {
 	int tax_val;
 	int quantity_value_spec;
 	String payement_intiate_id;
-	String user_update_res;
+	int user_update_res;
 	@BeforeTest
 	public static void extent()
 	{
-		SimpleDateFormat dateformat=new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
-		Date currentDate = new Date();
-        String currentDateString = dateformat.format(currentDate);
-		Report = new ExtentReports(System.getProperty("user.dir")+"/Report/"+currentDateString+".html");
-		Test = Report.startTest("CMX INJIN API REPORT");
+		Report = new ExtentReports(System.getProperty("user.dir")+"/Report/"+"My_Extent_Report.html");
+        Test = Report.startTest("CMX INJIN API REPORT");
 	}
 	
-	public String basic_auth()
+	public String basic_auth() throws IOException
 	{	
     RestAssured.baseURI = readconfig.baseurl();
     String validusername=readconfig.Username();
     String validpassword=readconfig.Password();
+    String acc_token_body = readconfig.access_token_body();
     
     response = given().contentType("application/json")
-            .auth().basic(validusername, validpassword)
+            .auth().basic(validusername, validpassword).body(acc_token_body)
             .when()
             .post("/user/v1/token");
     JSONObject jsobj =new JSONObject(response.getBody().asString());
@@ -79,7 +78,7 @@ public class Start_Booking_Flow {
 	
 	
 	
-	public String films()
+	public String films() throws IOException
 	{
 	String token=basic_auth();
 	
@@ -136,65 +135,10 @@ public class Start_Booking_Flow {
 	return Sheduled_Date_only;
     }
 	
-	/*public String distinct_showdates()
-	{
-	String token=basic_auth();
 	
-	response = given().contentType("application/json").headers("Authorization","Bearer "+token,"appplatform","WEBSITE","appversion","1.0.0")
-			.when().request(Method.GET,"/cms/v1/films/"+first_film_id+"/distinctshowdates");
-	
-	String resbod = response.getBody().asString();
-	JSONArray JSONResponseBody = new   JSONArray(resbod);
-	if((response.getStatusCode()==200)&&(!(JSONResponseBody.isEmpty()))&&(!(resbod.isEmpty())))
-	{
-		Test.log(LogStatus.PASS, "Distinct Showdates endpoint is executed and verified Successfully");
-		
-	}
-	else
-	{
-		Test.log(LogStatus.FAIL, "Distinct Showdates is Failed:  " + response.getBody().asString());
-	}
-	
-	    String distinctDate_response= response.asString();
-		JsonPath json_path=new JsonPath(distinctDate_response);	
-	    List<String> dates = json_path.getList("groupValue");
-		String particularDates = dates.get(0);
-		System.out.println("Particular date: "+particularDates);
-		String Date_only=particularDates.split("T", 0)[0];
-		System.out.println("Date_only: "+Date_only);
-
-	return Date_only;
-    }
-	*/
-	
-//	@Test(priority = 1)
-	public void Showtimes()
-	{
-		SimpleDateFormat dateformat=new SimpleDateFormat("yyyy-MM-dd");
-		Date currentDate = new Date();
-        String currentDateString = dateformat.format(currentDate);
-       
-        String token=basic_auth();
-		
-		response = given().contentType("application/json").headers("Authorization","Bearer "+token,"appplatform","WEBSITE","appversion","1.0.0")
-				.when().request(Method.GET,"/cms/v1/sessionsbyexperience?showdate="+currentDateString);
-		
-		String resbod = response.getBody().asString();
-		
-		JSONArray JSONResponseBody = new   JSONArray(resbod);
-		if((response.getStatusCode()==200)&&(!(JSONResponseBody.isEmpty()))&&(!(resbod.isEmpty())))
-		{
-		   Test.log(LogStatus.PASS, "Showtime endpoint is executed and verified Successfully");
-		}
-		else
-		{
-		   Test.log(LogStatus.FAIL, "Showtime is Failed:   "+ response.getBody().asString());
-		}
-
-	}
 	
 	@Test(priority = 0)
-	public void Session_id()
+	public void Session_id() throws IOException
 	{
 		String currentDateString = films();
 		String token=basic_auth();
@@ -221,7 +165,7 @@ public class Start_Booking_Flow {
 	}
 	
 	@Test(priority = 1)
-	public void seat_plan()
+	public void seat_plan() throws IOException
 	{
 		String token=basic_auth();	
 		response = given().contentType("application/json").headers("Authorization","Bearer "+token,"appplatform","WEBSITE","appversion","1.0.0")
@@ -329,6 +273,7 @@ public class Start_Booking_Flow {
 		int n = sizeofgrouping.size();
 		float pric_val=0;
 		int quant_val=0;
+		float tax_value_order_grouping=0;
 		for(int i=0;i<n;i++)
 		{
 			
@@ -336,6 +281,8 @@ public class Start_Booking_Flow {
 			 System.out.println(pric_val);
 			 quant_val = JsonPath.with(resbod).get("order_grouping["+i+"].quantity["+i+"]");
 			 System.out.println(quant_val);
+			 tax_value_order_grouping = JsonPath.with(resbod).get("order_grouping["+i+"].taxValue["+i+"]");
+			 System.out.println(tax_value_order_grouping);
 		}
 		float tax_dec=tax_val+100;
 		float prc_quan = price_val*quantity_value_spec;
@@ -347,12 +294,13 @@ public class Start_Booking_Flow {
 		float rounding_tax=Float.parseFloat(df_obj.format(tax_amt));
 		System.out.println("Tax amount:"+rounding_tax);
 		
-		
+		Assert.assertEquals(pric_val, rounding_price_before_tax,"The Ticket Before price value is not as expected");
+		Assert.assertEquals(rounding_tax, tax_value_order_grouping,"The tax value is not as expected");
 		
 	} 
 	
 	@Test(priority = 3)
-	public void payment_types()
+	public void payment_types() throws IOException
 	{
 		String token=basic_auth();
 		
@@ -409,7 +357,7 @@ public class Start_Booking_Flow {
 	}
 	
 	 @Test(priority = 5)
-		public void cancel_order()
+		public void cancel_order() throws IOException
 		{
 			String token=basic_auth();
 			
@@ -427,16 +375,33 @@ public class Start_Booking_Flow {
 			
 		}
 	 
-//	 //@Test(priority = 6)	 
-//	 public void user_journey() throws IOException, ParseException
-//	 {
-//		 User_jounery_api ap = new  User_jounery_api();
-//		 ap.update_user_api(user_update_res);
-//		 if((user_update_res.getStatusCode()==200)&&(!(user_update_res.isEmpty())))
-//		 {
-//			 
-//		 }
-//	 }
+	 @Test(priority = 6)	 
+	 public void user_journey() throws IOException, ParseException
+	 {
+		 User_jounery_api ap = new  User_jounery_api();
+		 if(ap.update_user_api()==200)
+		 {
+			 Test.log(LogStatus.PASS, "Update user endpoint is executed and verified Successfully");
+		 }
+		 else
+		 {
+			 Test.log(LogStatus.FAIL, "Update user endpoint is Failed");
+		 }
+	 }
+	 
+	 @Test(priority = 7)	 
+	 public void user_details() throws IOException, ParseException
+	 {
+		 User_jounery_api ap = new  User_jounery_api();
+		 if(ap.get_user_details()==200)
+		 {
+			 Test.log(LogStatus.PASS, "Get user detail endpoint is executed and verified Successfully");
+		 }
+		 else
+		 {
+			 Test.log(LogStatus.FAIL, "Get user detail endpoint is Failed");
+		 }
+	 }
 	
 	@AfterTest
 	public static void extentend()

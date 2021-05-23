@@ -3,13 +3,20 @@
 <suite guice-stage="DEVELOPMENT" name="Failed suite [Default suite]">
   <test thread-count="5" name="Default test(failed)">
     <classes>
-      <class name="com_Api.start_api">
+      <class name="com_Api.Start_Booking_Flow">
         <methods>
+          <include name="Initiate_payment"/>
+          <include name="payment_types"/>
+          <include name="cancel_order"/>
           <include name="extentend"/>
+          <include name="seat_plan"/>
           <include name="extent"/>
+          <include name="Session_id"/>
+          <include name="user_details"/>
+          <include name="create_order"/>
           <include name="user_journey"/>
         </methods>
-      </class> <!-- com_Api.start_api -->
+      </class> <!-- com_Api.Start_Booking_Flow -->
     </classes>
   </test> <!-- Default test(failed) -->
 </suite> <!-- Failed suite [Default suite] -->
